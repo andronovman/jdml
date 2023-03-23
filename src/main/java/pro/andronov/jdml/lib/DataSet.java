@@ -1,5 +1,7 @@
 package pro.andronov.jdml.lib;
 
+import org.apache.commons.lang3.StringUtils;
+
 import javax.sql.DataSource;
 import java.sql.*;
 import java.util.*;
@@ -68,10 +70,7 @@ public class DataSet {
     }
 
     public Column getColumn(String name) {
-        for (Column c : getColumns())
-            if(c.getName().equalsIgnoreCase(name))
-                return c;
-        return null;
+        return getColumns().stream().filter(c -> c.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
     }
 
     public List<Column> getColumns() {
@@ -92,9 +91,15 @@ public class DataSet {
             rows.clear();
             while (rs.next()) {
                 Row row = new Row(this);
-                for (Column c : cols) {
-                    row.initValue(c.getName(), rs.getObject(c.getName(), c.getJavaClass()));
-                }
+                getColumns().stream().forEach(
+                        c -> {
+                            try {
+                                row.initValue(c.getName(), rs.getObject(c.getName(), c.getJavaClass()));
+                            } catch (SQLException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                );
                 rows.add(row);
             }
             lastElapsedTime = (System.currentTimeMillis() - lastElapsedTime);
@@ -115,9 +120,15 @@ public class DataSet {
                 rows.clear();
                 while (rs.next()) {
                     Row row = new Row(this);
-                    for (Column c : cols) {
-                        row.initValue(c.getName(), rs.getObject(c.getName(), c.getJavaClass()));
-                    }
+                    getColumns().stream().forEach(
+                            c -> {
+                                try {
+                                    row.initValue(c.getName(), rs.getObject(c.getName(), c.getJavaClass()));
+                                } catch (SQLException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }
+                    );
                     rows.add(row);
                 }
                 lastElapsedTime = (System.currentTimeMillis() - lastElapsedTime);
@@ -132,9 +143,34 @@ public class DataSet {
 
     public List<Row> save() {
         List<Row> completed = new ArrayList<>();
-        return rows.stream().filter(row -> {
+        if(table == null || pk == null) {
+            throw new RuntimeException("Unable to save. Table or PK not defined");
+        }
+        String[] columns = new String[cols.size()];
+        String[] set = new String[cols.size()];
+        List values;
+        for (int i = 0; i < cols.size(); i++) {
+            columns[i] = cols.get(i).toString();
+        }
+        int i = 0;
+        for (String s : columns) {
+            set[i] = s + " = ?";
+            i++;
+        }
+        String insert = String.format("INSERT INTO %s(%s) VALUES(%s)", table, String.join(", ", columns), StringUtils.repeat("?", ", ", cols.size()));
+        String update = String.format("UPDATE %s SET %s WHERE %s = ?", table, String.join(", ", set), pk);
+
+        rows.stream().filter(row -> {
             return row.hasChanges();
-        }).collect(Collectors.toList());
+        }).forEach(row -> {
+            if(row.isNew()) {
+
+            } else {
+
+            }
+            completed.add(row);
+        });
+        return completed;
     }
 
     public Row add() {

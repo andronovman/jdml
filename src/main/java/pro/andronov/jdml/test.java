@@ -28,7 +28,9 @@ public class test {
 
         DataSet paid = DataSetFactory.get().initDataSet("payments", "id", "SELECT nextval('payments_id_seq'::regclass)");
 
-        Calendar cal = Calendar.getInstance();
+        System.out.println(paid.loadAll());
+
+        /*Calendar cal = Calendar.getInstance();
 
         for(int i=0; i<10; i++) {
             cal.add(Calendar.DATE, i);
@@ -38,6 +40,6 @@ public class test {
             r.setValue("amount", Math.random());
         }
 
-        System.out.println(paid.save().size());
+        System.out.println(paid.save().size());*/
     }
 }

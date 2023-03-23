@@ -23,7 +23,10 @@ public class Column extends LinkedHashMap<String, Object> {
     }
 
     public void setJavaClass(Class c) {
-        put("JAVA_CLASS", c);
+        if(c == java.sql.Date.class)
+            put("JAVA_CLASS", java.util.Date.class);
+        else
+            put("JAVA_CLASS", c);
     }
 
     public Class getJavaClass() {
